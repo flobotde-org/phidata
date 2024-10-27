@@ -1,5 +1,5 @@
 # phi/storage/agent/neo4j.py
-from neo4j import GraphDatabase, Neo4jDriver, Transaction
+from neo4j import GraphDatabase, Driver, ManagedTransaction
 from typing import Optional, List
 from phi.agent.session import AgentSession
 from phi.storage.agent.base import AgentStorage
@@ -16,11 +16,14 @@ class Neo4jAgentStorage(AgentStorage):
             user (str): The username to connect with.
             password (str): The password to connect with.
         """
-        self.driver: Neo4jDriver = GraphDatabase.driver(uri, auth=(user, password))
+        self.driver: Driver = GraphDatabase.driver(uri, auth=(user, password))
 
     def close(self):
         """Close the connection to the database."""
         self.driver.close()
+
+    def _transaction_execute(self, /, tx: ManagedTransaction, query: str, parameters: Optional[dict] = None):
+        return tx.run(query, parameters).data()
 
     def _execute_write(self, query: str, parameters: Optional[dict] = None):
         with self.driver.session() as session:
@@ -29,10 +32,6 @@ class Neo4jAgentStorage(AgentStorage):
     def _execute_read(self, query: str, parameters: Optional[dict] = None):
         with self.driver.session() as session:
             return session.read_transaction(self._transaction_execute, query, parameters)
-
-    @staticmethod
-    def _transaction_execute(tx: Transaction, query: str, parameters: Optional[dict] = None):
-        return tx.run(query, parameters).data()
 
     def create(self) -> None:
         # In Neo4j, you don't typically create tables, but you can create constraints.

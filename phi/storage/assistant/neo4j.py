@@ -1,38 +1,28 @@
 # phi/storage/assistant/neo4j.py
-from neo4j import GraphDatabase, Neo4jDriver, Transaction
-from typing import Optional, List
-from phi.assistant.run import AssistantRun
-from phi.storage.assistant.base import AssistantStorage
-from phi.utils.log import logger
+from typing import Optional, Dict, Any, List
+from neo4j import GraphDatabase, Driver, ManagedTransaction
+
+from phi.assistant.storage.base import AssistantStorage
+from phi.assistant.assistant import Assistant
 
 
 class Neo4jAssistantStorage(AssistantStorage):
-    def __init__(self, uri: str, user: str, password: str):
-        """
-        Initialize Assistant storage using a Neo4j graph database.
+    def __init__(self, uri: str, username: str, password: str, database: str = "neo4j"):
+        self.driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
+        self.database = database
 
-        Args:
-            uri (str): The URI for the Neo4j database.
-            user (str): The username to connect with.
-            password (str): The password to connect with.
-        """
-        self.driver: Neo4jDriver = GraphDatabase.driver(uri, auth=(user, password))
+    def _transaction_execute(
+        self, /, tx: ManagedTransaction, query: str, parameters: Optional[Dict[Any, Any]] = None
+    ) -> Any:
+        return tx.run(query, parameters).data()
 
-    def close(self):
-        """Close the connection to the database."""
-        self.driver.close()
-
-    def _execute_write(self, query: str, parameters: Optional[dict] = None):
-        with self.driver.session() as session:
+    def _execute_write(self, query: str, parameters: Optional[Dict[Any, Any]] = None) -> Any:
+        with self.driver.session(database=self.database) as session:
             return session.write_transaction(self._transaction_execute, query, parameters)
 
-    def _execute_read(self, query: str, parameters: Optional[dict] = None):
-        with self.driver.session() as session:
+    def _execute_read(self, query: str, parameters: Optional[Dict[Any, Any]] = None) -> Any:
+        with self.driver.session(database=self.database) as session:
             return session.read_transaction(self._transaction_execute, query, parameters)
-
-    @staticmethod
-    def _transaction_execute(tx: Transaction, query: str, parameters: Optional[dict] = None):
-        return tx.run(query, parameters).data()
 
     def create(self) -> None:
         # In Neo4j, you don't typically create tables, but you can create constraints.

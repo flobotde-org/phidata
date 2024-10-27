@@ -1,8 +1,7 @@
-from neo4j import GraphDatabase, Neo4jDriver, Transaction
+from neo4j import GraphDatabase, Driver, ManagedTransaction
 from typing import Optional, List
 from phi.memory.db import MemoryDb
 from phi.memory.row import MemoryRow  # Assuming this is your data model
-from phi.utils.log import logger
 
 
 class Neo4jMemoryDb(MemoryDb):
@@ -15,23 +14,24 @@ class Neo4jMemoryDb(MemoryDb):
             user (str): The username to connect with.
             password (str): The password to connect with.
         """
-        self.driver: Neo4jDriver = GraphDatabase.driver(uri, auth=(user, password))
+        self.driver: Driver = GraphDatabase.driver(uri, auth=(user, password))
 
     def close(self):
         """Close the connection to the database."""
         self.driver.close()
 
-    def _execute_write(self, query: str, parameters: Optional[dict] = None):
+    def _transaction_execute(
+        self, /, tx: ManagedTransaction, query: str, parameters: Optional[Dict[str, Any]] = None
+    ) -> Any:
+        return tx.run(query, parameters).data()
+
+    def _execute_write(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> Any:
         with self.driver.session() as session:
             return session.write_transaction(self._transaction_execute, query, parameters)
 
-    def _execute_read(self, query: str, parameters: Optional[dict] = None):
+    def _execute_read(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> Any:
         with self.driver.session() as session:
             return session.read_transaction(self._transaction_execute, query, parameters)
-
-    @staticmethod
-    def _transaction_execute(tx: Transaction, query: str, parameters: Optional[dict] = None):
-        return tx.run(query, parameters).data()
 
     def create(self) -> None:
         # In Neo4j, you don't typically create tables. But you might want an index if you're working with very large graphs.
