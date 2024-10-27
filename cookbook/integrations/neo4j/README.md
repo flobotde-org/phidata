@@ -1,4 +1,4 @@
-# Pgvector Agent
+# Neo4j-Vector Agent
 
 > Fork and clone the repository if needed.
 
