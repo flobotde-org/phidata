@@ -3,8 +3,7 @@ from typing import Optional, Dict, Any, List
 from neo4j import GraphDatabase, Driver, ManagedTransaction
 
 from phi.assistant.storage.base import AssistantStorage
-from phi.assistant.assistant import Assistant
-
+from phi.assistant.assistant import AssistantRun
 
 class Neo4jAssistantStorage(AssistantStorage):
     def __init__(self, uri: str, username: str, password: str, database: str = "neo4j"):

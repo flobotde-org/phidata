@@ -47,7 +47,7 @@ class Neo4jVector(VectorDb):
         self.distance: Neo4jDistance = distance
         self.schema_version: int = schema_version
         self.auto_upgrade_schema: bool = auto_upgrade_schema
-        vector_index: Union[Neo4jNativeIndex, HNSW] = vector_index
+        self.vector_index: Union[Neo4jNativeIndex, HNSW] = vector_index
         self._check_gds_availability()
         logger.debug(f"Created Neo4jVector: '{self.database}'")
 
