@@ -1,6 +1,6 @@
 services:
   neo4j:
-    image: neo4j:5.9.0-community
+    image: neo4j:community
     container_name: phi-neo4j
     user: "${UID:-501}:${GID:-20}"
     ports:

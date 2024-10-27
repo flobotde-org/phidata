@@ -4,7 +4,8 @@
 # This script starts a Neo4j Docker container for use with phidata vectordb demos.
 
 # Set the path to the docker-compose.yml file
-COMPOSE_FILE="vectordb/neo4j/docker-compose.yml"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+COMPOSE_FILE=$SCRIPT_DIR"/vectordb/neo4j/docker-compose.yml"
 
 # Function to check if a command exists
 command_exists() {

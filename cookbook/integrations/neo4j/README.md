@@ -12,7 +12,7 @@ source ~/.venvs/aienv/bin/activate
 ### 2. Install libraries
 
 ```shell
-pip install -U neo4j langchain-community pypdf "psycopg[binary]" phidata docker
+pip install -U neo4j langchain-community langchain-ollama pypdf "psycopg[binary]" phidata docker rapidocr-onnxruntime
 ```
 
 ### 3. Run Neo4J locally
