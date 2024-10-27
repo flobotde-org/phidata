@@ -9,7 +9,7 @@ from phi.vectordb.neo4j import Neo4jVector
 db_url = "bolt://neo4j:phi-neo4j@localhost:7687"
 
 agent = Agent(
-    storage=Neo4jAgentStorageAgentStorage(table_name="recipe_agent", db_url=db_url),
+    storage=Neo4jAgentStorage(table_name="recipe_agent", db_url=db_url),
     knowledge_base=PDFUrlKnowledgeBase(
         urls=["https://phi-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf"],
         vector_db=Neo4jVectorVector(collection="recipe_documents", db_url=db_url),
