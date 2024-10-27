@@ -50,7 +50,7 @@ class Neo4jAssistantStorage(AssistantStorage):
         """
         result = self._execute_read(query, {"run_id": run_id})
         if result:
-            return AssistantRun(**result[0]['r'])
+            return AssistantRun(**result[0]["r"])
         return None
 
     def get_all_run_ids(self, user_id: Optional[str] = None) -> List[str]:
@@ -60,7 +60,7 @@ class Neo4jAssistantStorage(AssistantStorage):
         RETURN r.run_id
         """
         results = self._execute_read(query, {"user_id": user_id})
-        return [record['r.run_id'] for record in results]
+        return [record["r.run_id"] for record in results]
 
     def get_all_runs(self, user_id: Optional[str] = None) -> List[AssistantRun]:
         query = """
@@ -69,7 +69,7 @@ class Neo4jAssistantStorage(AssistantStorage):
         RETURN r
         """
         results = self._execute_read(query, {"user_id": user_id})
-        return [AssistantRun(**record['r']) for record in results]
+        return [AssistantRun(**record["r"]) for record in results]
 
     def upsert(self, row: AssistantRun) -> Optional[AssistantRun]:
         query = """
@@ -96,11 +96,11 @@ class Neo4jAssistantStorage(AssistantStorage):
             "assistant_data": row.assistant_data,
             "run_data": row.run_data,
             "user_data": row.user_data,
-            "task_data": row.task_data
+            "task_data": row.task_data,
         }
         result = self._execute_write(query, parameters)
         if result:
-            return AssistantRun(**result[0]['r'])
+            return AssistantRun(**result[0]["r"])
         return None
 
     def delete(self) -> None:
@@ -110,6 +110,7 @@ class Neo4jAssistantStorage(AssistantStorage):
         DETACH DELETE r
         """
         self._execute_write(query)
+
 
 # Usage Example:
 # db = Neo4jAssistantStorage("bolt://localhost:7687", "neo4j", "password")

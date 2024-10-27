@@ -9,6 +9,7 @@ from phi.vectordb.neo4j.distance import Neo4jDistance
 from phi.vectordb.search import SearchType
 from phi.utils.log import logger
 
+
 class Neo4jVector(VectorDb):
     """Neo4j Vector Database Implementation"""
 
@@ -58,7 +59,7 @@ class Neo4jVector(VectorDb):
             session.run("""
             CREATE CONSTRAINT ON (d:Document) ASSERT d.id IS UNIQUE;
             """)
-        
+
         self.create_index()
 
     def create_index(self):
@@ -91,9 +92,12 @@ class Neo4jVector(VectorDb):
             bool: True if the document exists, False otherwise.
         """
         with self.driver.session(database=self.database) as session:
-            result = session.run("""
+            result = session.run(
+                """
             MATCH (d:Document {content_hash: $hash}) RETURN d
-            """, hash=document.content_hash)
+            """,
+                hash=document.content_hash,
+            )
             return result.single() is not None
 
     def name_exists(self, name: str) -> bool:
@@ -107,9 +111,12 @@ class Neo4jVector(VectorDb):
             bool: True if a document with the given name exists, False otherwise.
         """
         with self.driver.session(database=self.database) as session:
-            result = session.run("""
+            result = session.run(
+                """
             MATCH (d:Document {name: $name}) RETURN d
-            """, name=name)
+            """,
+                name=name,
+            )
             return result.single() is not None
 
     def id_exists(self, id: str) -> bool:
@@ -123,9 +130,12 @@ class Neo4jVector(VectorDb):
             bool: True if a document with the given id exists, False otherwise.
         """
         with self.driver.session(database=self.database) as session:
-            result = session.run("""
+            result = session.run(
+                """
             MATCH (d:Document {id: $id}) RETURN d
-            """, id=id)
+            """,
+                id=id,
+            )
             return result.single() is not None
 
     def insert(self, documents: List[Document], filters: Optional[Dict[str, Any]] = None) -> None:
@@ -138,7 +148,8 @@ class Neo4jVector(VectorDb):
         """
         with self.driver.session(database=self.database) as session:
             for doc in documents:
-                session.run("""
+                session.run(
+                    """
                 CREATE (d:Document {
                     id: $id,
                     name: $name,
@@ -146,8 +157,13 @@ class Neo4jVector(VectorDb):
                     content_hash: $hash,
                     embedding: $embedding
                 })
-                """, id=doc.id, name=doc.name, content=doc.content,
-                hash=doc.content_hash, embedding=doc.embedding)
+                """,
+                    id=doc.id,
+                    name=doc.name,
+                    content=doc.content,
+                    hash=doc.content_hash,
+                    embedding=doc.embedding,
+                )
 
     def upsert(self, documents: List[Document], filters: Optional[Dict[str, Any]] = None) -> None:
         """
@@ -159,14 +175,20 @@ class Neo4jVector(VectorDb):
         """
         with self.driver.session(database=self.database) as session:
             for doc in documents:
-                session.run("""
+                session.run(
+                    """
                 MERGE (d:Document {id: $id})
                 SET d.name = $name,
                     d.content = $content,
                     d.content_hash = $hash,
                     d.embedding = $embedding
-                """, id=doc.id, name=doc.name, content=doc.content,
-                hash=doc.content_hash, embedding=doc.embedding)
+                """,
+                    id=doc.id,
+                    name=doc.name,
+                    content=doc.content,
+                    hash=doc.content_hash,
+                    embedding=doc.embedding,
+                )
 
     def search(self, query: str, limit: int = 5, filters: Optional[Dict[str, Any]] = None) -> List[Document]:
         """
@@ -250,7 +272,7 @@ class Neo4jVector(VectorDb):
 
     def _vector_search(self, query: str, limit: int, filters: Optional[Dict[str, Any]]) -> List[Document]:
         query_embedding = self.embedder.embed_query(query)
-    
+
         if isinstance(self.vector_index, HNSW):
             cypher_query = f"""
             CALL gds.index.vector.queryHNSW(
@@ -273,10 +295,10 @@ class Neo4jVector(VectorDb):
             LIMIT $limit
             RETURN d, distance AS score
             """
-    
+
         with self.driver.session(database=self.database) as session:
             results = session.run(cypher_query, query_embedding=query_embedding, limit=limit)
-            return [self._create_document_from_record(record['node'], score=record['score']) for record in results]
+            return [self._create_document_from_record(record["node"], score=record["score"]) for record in results]
 
     def _keyword_search(self, query: str, limit: int, filters: Optional[Dict[str, Any]]) -> List[Document]:
         """
@@ -288,10 +310,10 @@ class Neo4jVector(VectorDb):
         RETURN d
         LIMIT $limit
         """
-        
+
         with self.driver.session(database=self.database) as session:
             results = session.run(cypher_query, query=query, limit=limit)
-            return [self._create_document_from_record(record['d']) for record in results]
+            return [self._create_document_from_record(record["d"]) for record in results]
 
     def _hybrid_search(self, query: str, limit: int, filters: Optional[Dict[str, Any]]) -> List[Document]:
         """
@@ -299,9 +321,9 @@ class Neo4jVector(VectorDb):
         """
         if self.embedder is None:
             raise ValueError("Embedder is required for hybrid search")
-        
+
         query_embedding = self.embedder.embed_query(query)
-        
+
         cypher_query = f"""
         MATCH (d:Document)
         WHERE {self._build_filter_conditions(filters)}
@@ -312,10 +334,10 @@ class Neo4jVector(VectorDb):
         LIMIT $limit
         RETURN d
         """
-        
+
         with self.driver.session(database=self.database) as session:
             results = session.run(cypher_query, query_embedding=query_embedding, query=query, limit=limit)
-            return [self._create_document_from_record(record['d']) for record in results]
+            return [self._create_document_from_record(record["d"]) for record in results]
 
     def _distance_function(self) -> str:
         """
@@ -350,8 +372,9 @@ class Neo4jVector(VectorDb):
             name=record["name"],
             content=record["content"],
             embedding=record["embedding"],
-            metadata=record.get("metadata", {})
+            metadata=record.get("metadata", {}),
         )
+
     def _check_gds_availability(self):
         query = "CALL gds.list() YIELD name RETURN count(*) > 0 AS gds_available"
         with self.driver.session(database=self.database) as session:

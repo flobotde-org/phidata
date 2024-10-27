@@ -58,12 +58,10 @@ class Neo4jMemoryDb(MemoryDb):
         WHERE $user_id IS NULL OR m.user_id = $user_id
         RETURN m ORDER BY m.created_at {}
         LIMIT $limit
-        """.format(
-            "ASC" if sort == "asc" else "DESC"
-        )
+        """.format("ASC" if sort == "asc" else "DESC")
         parameters = {"user_id": user_id, "limit": limit or 100}
         results = self._execute_read(query, parameters)
-        return [MemoryRow(**record['m']) for record in results]
+        return [MemoryRow(**record["m"]) for record in results]
 
     def upsert_memory(self, memory: MemoryRow) -> Optional[MemoryRow]:
         query = """
@@ -102,6 +100,7 @@ class Neo4jMemoryDb(MemoryDb):
     def clear(self) -> bool:
         self.drop_table()
         return True
+
 
 # Usage Example:
 # db = Neo4jMemoryDb("bolt://localhost:7687", "neo4j", "password")

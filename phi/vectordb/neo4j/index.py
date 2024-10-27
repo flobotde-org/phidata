@@ -2,8 +2,10 @@
 from typing import Dict, Any
 from pydantic import BaseModel
 
+
 class Neo4jNativeIndex(BaseModel):
     pass
+
 
 class HNSW(BaseModel):
     m: int = 16

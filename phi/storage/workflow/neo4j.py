@@ -67,14 +67,18 @@ class Neo4jWorkflowStorage(WorkflowStorage):
         """
         try:
             with self._engine.session(database=self.database) as session:
-                result = session.run(f"""
+                result = session.run(
+                    f"""
                 MATCH (s:{self.table_name} {{session_id: $session_id}})
                 WHERE $user_id IS NULL OR s.user_id = $user_id
                 RETURN s
-                """, session_id=session_id, user_id=user_id)
+                """,
+                    session_id=session_id,
+                    user_id=user_id,
+                )
                 record = result.single()
                 if record:
-                    session_data = record['s']
+                    session_data = record["s"]
                     return WorkflowSession(**session_data)
         except Exception as e:
             logger.debug(f"Exception reading from database: {e}")
@@ -103,7 +107,7 @@ class Neo4jWorkflowStorage(WorkflowStorage):
                 ORDER BY s.created_at DESC
                 """
                 result = session.run(query, user_id=user_id, workflow_id=workflow_id)
-                return [record['s.session_id'] for record in result]
+                return [record["s.session_id"] for record in result]
         except Exception as e:
             logger.debug(f"Exception reading from database: {e}")
             logger.debug("Creating constraint for future transactions")
@@ -133,7 +137,7 @@ class Neo4jWorkflowStorage(WorkflowStorage):
                 ORDER BY s.created_at DESC
                 """
                 result = session.run(query, user_id=user_id, workflow_id=workflow_id)
-                return [WorkflowSession(**record['s']) for record in result]
+                return [WorkflowSession(**record["s"]) for record in result]
         except Exception as e:
             logger.debug(f"Exception reading from database: {e}")
             logger.debug("Creating constraint for future transactions")
@@ -159,13 +163,15 @@ class Neo4jWorkflowStorage(WorkflowStorage):
                 RETURN s
                 """
                 properties = session.model_dump()
-                properties['created_at'] = properties.get('created_at', int(time.time()))
-                properties['updated_at'] = int(time.time())
-                
-                result = db_session.run(query, session_id=session.session_id, properties=properties, updated_at=int(time.time()))
+                properties["created_at"] = properties.get("created_at", int(time.time()))
+                properties["updated_at"] = int(time.time())
+
+                result = db_session.run(
+                    query, session_id=session.session_id, properties=properties, updated_at=int(time.time())
+                )
                 record = result.single()
                 if record:
-                    return WorkflowSession(**record['s'])
+                    return WorkflowSession(**record["s"])
         except Exception as e:
             logger.debug(f"Exception upserting into database: {e}")
             logger.debug("Creating constraint and retrying upsert")
@@ -186,12 +192,15 @@ class Neo4jWorkflowStorage(WorkflowStorage):
 
         try:
             with self._engine.session(database=self.database) as session:
-                result = session.run(f"""
+                result = session.run(
+                    f"""
                 MATCH (s:{self.table_name} {{session_id: $session_id}})
                 DELETE s
                 RETURN count(s) as deleted_count
-                """, session_id=session_id)
-                deleted_count = result.single()['deleted_count']
+                """,
+                    session_id=session_id,
+                )
+                deleted_count = result.single()["deleted_count"]
                 if deleted_count == 0:
                     logger.debug(f"No session found with session_id: {session_id}")
                 else:
@@ -231,7 +240,7 @@ class Neo4jWorkflowStorage(WorkflowStorage):
         memo[id(self)] = copied_obj
 
         for k, v in self.__dict__.items():
-            if k == '_engine':
+            if k == "_engine":
                 # Reuse the driver without copying
                 setattr(copied_obj, k, v)
             else:

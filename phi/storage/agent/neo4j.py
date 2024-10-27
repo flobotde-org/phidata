@@ -5,6 +5,7 @@ from phi.agent.session import AgentSession
 from phi.storage.agent.base import AgentStorage
 from phi.utils.log import logger
 
+
 class Neo4jAgentStorage(AgentStorage):
     def __init__(self, uri: str, user: str, password: str):
         """
@@ -49,7 +50,7 @@ class Neo4jAgentStorage(AgentStorage):
         """
         result = self._execute_read(query, {"session_id": session_id})
         if result:
-            return AgentSession(**result[0]['s'])
+            return AgentSession(**result[0]["s"])
         return None
 
     def get_all_session_ids(self, user_id: Optional[str] = None, agent_id: Optional[str] = None) -> List[str]:
@@ -59,7 +60,7 @@ class Neo4jAgentStorage(AgentStorage):
         RETURN s.session_id
         """
         results = self._execute_read(query, {"user_id": user_id, "agent_id": agent_id})
-        return [record['s.session_id'] for record in results]
+        return [record["s.session_id"] for record in results]
 
     def get_all_sessions(self, user_id: Optional[str] = None, agent_id: Optional[str] = None) -> List[AgentSession]:
         query = """
@@ -68,7 +69,7 @@ class Neo4jAgentStorage(AgentStorage):
         RETURN s
         """
         results = self._execute_read(query, {"user_id": user_id, "agent_id": agent_id})
-        return [AgentSession(**record['s']) for record in results]
+        return [AgentSession(**record["s"]) for record in results]
 
     def upsert(self, session: AgentSession) -> Optional[AgentSession]:
         query = """
@@ -89,11 +90,11 @@ class Neo4jAgentStorage(AgentStorage):
             "memory": session.memory,
             "agent_data": session.agent_data,
             "user_data": session.user_data,
-            "session_data": session.session_data
+            "session_data": session.session_data,
         }
         result = self._execute_write(query, parameters)
         if result:
-            return AgentSession(**result[0]['s'])
+            return AgentSession(**result[0]["s"])
         return None
 
     def delete_session(self, session_id: Optional[str] = None):
@@ -118,6 +119,7 @@ class Neo4jAgentStorage(AgentStorage):
     def upgrade_schema(self) -> None:
         # Placeholder for schema upgrades, if needed
         pass
+
 
 # Usage Example:
 # db = Neo4jAgentStorage("bolt://localhost:7687", "neo4j", "password")

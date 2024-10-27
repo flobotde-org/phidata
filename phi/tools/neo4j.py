@@ -113,7 +113,7 @@ class Neo4jTools(Toolkit):
         query = f"MATCH (n:{label}) RETURN n"
         nodes = self._execute_read(query)
 
-        with open(path, 'w') as file:
+        with open(path, "w") as file:
             for node in nodes:
                 file.write(f"{node}\n")
 
@@ -134,6 +134,7 @@ class Neo4jTools(Toolkit):
         except Exception as e:
             logger.error(f"Error running query: {e}")
             return str(e)
+
 
 # Usage Example:
 # tools = Neo4jTools("bolt://localhost:7687", "neo4j", "password")
