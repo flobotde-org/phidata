@@ -5,7 +5,6 @@ from phi.agent.session import AgentSession
 from phi.storage.agent.base import AgentStorage
 from phi.utils.log import logger
 
-
 class Neo4jAgentStorage(AgentStorage):
     def __init__(self, uri: str, user: str, password: str):
         """

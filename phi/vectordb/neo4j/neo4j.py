@@ -7,7 +7,7 @@ from phi.embedder import Embedder
 from phi.utils.log import logger
 
 
-class Neo4jVectorDb(VectorDb):
+class Neo4jVector(VectorDb):
     """Neo4j Vector Database Implementation"""
 
     def __init__(
@@ -24,7 +24,7 @@ class Neo4jVectorDb(VectorDb):
         auto_upgrade_schema: bool = False,
     ):
         """
-        Initialize the Neo4jVectorDb instance.
+        Initialize the Neo4jVector instance.
 
         Args:
             uri (str): The URI of the Neo4j database.
@@ -46,7 +46,7 @@ class Neo4jVectorDb(VectorDb):
         self.auto_upgrade_schema: bool = auto_upgrade_schema
         vector_index: Union[Neo4jNativeIndex, HNSW] = vector_index
         self._check_gds_availability()
-        logger.debug(f"Created Neo4jVectorDb: '{self.database}'")
+        logger.debug(f"Created Neo4jVector: '{self.database}'")
 
     def create(self) -> None:
         """
