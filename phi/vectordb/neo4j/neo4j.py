@@ -43,7 +43,7 @@ class Neo4jVectorDb(VectorDb):
         self.distance: Neo4jDistance = distance
         self.schema_version: int = schema_version
         self.auto_upgrade_schema: bool = auto_upgrade_schema
-
+        self._check_gds_availability()
         logger.debug(f"Created Neo4jVectorDb: '{self.database}'")
 
     def create(self) -> None:
@@ -305,3 +305,10 @@ class Neo4jVectorDb(VectorDb):
             embedding=record["embedding"],
             metadata=record.get("metadata", {})
         )
+    def _check_gds_availability(self):
+        query = "CALL gds.list() YIELD name RETURN count(*) > 0 AS gds_available"
+        with self.driver.session(database=self.database) as session:
+            result = session.run(query)
+            gds_available = result.single()["gds_available"]
+            if not gds_available:
+                raise RuntimeError("Graph Data Science library is not available in Neo4j. Please install it.")
