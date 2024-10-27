@@ -27,6 +27,13 @@
 /storage
 .images
 
+# neo4j cookbook
+cookbook/vectordb/neo4j/data
+cookbook/vectordb/neo4j/import
+cookbook/vectordb/neo4j/logs
+cookbook/vectordb/neo4j/plugins
+apoc.jar
+
 # ignore wip dir
 wip
 
