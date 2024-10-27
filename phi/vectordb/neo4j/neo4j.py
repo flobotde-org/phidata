@@ -4,8 +4,10 @@ from neo4j import GraphDatabase, Driver
 from phi.document import Document
 from phi.vectordb.base import VectorDb
 from phi.embedder import Embedder
+from phi.vectordb.neo4j.index import Neo4jNativeIndex, HNSW
+from phi.vectordb.neo4j.distance import Neo4jDistance
+from phi.vectordb.search import SearchType
 from phi.utils.log import logger
-
 
 class Neo4jVector(VectorDb):
     """Neo4j Vector Database Implementation"""

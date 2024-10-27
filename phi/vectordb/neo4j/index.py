@@ -1,5 +1,5 @@
 # phi/vectordb/neo4j/index.py
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from pydantic import BaseModel
 
 class Neo4jNativeIndex(BaseModel):
