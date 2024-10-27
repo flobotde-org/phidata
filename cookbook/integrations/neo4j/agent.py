@@ -12,7 +12,7 @@ agent = Agent(
     storage=Neo4jAgentStorage(table_name="recipe_agent", db_url=db_url),
     knowledge_base=PDFUrlKnowledgeBase(
         urls=["https://phi-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf"],
-        vector_db=Neo4jVectorVector(collection="recipe_documents", db_url=db_url),
+        vector_db=Neo4jVector(collection="recipe_documents", db_url=db_url),
     ),
     # Show tool calls in the response
     show_tool_calls=True,
