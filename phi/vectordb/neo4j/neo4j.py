@@ -1,5 +1,5 @@
 # phi/vectordb/neo4j/neo4j.py
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Union, Dict, Any
 from neo4j import GraphDatabase, Driver
 from phi.document import Document
 from phi.vectordb.base import VectorDb
@@ -18,6 +18,7 @@ class Neo4jVectorDb(VectorDb):
         database: str = "neo4j",
         embedder: Optional[Embedder] = None,
         search_type: SearchType = SearchType.vector,
+        vector_index: Union[Neo4jNativeIndex, HNSW] = HNSW(),
         distance: Neo4jDistance = Neo4jDistance.cosine,
         schema_version: int = 1,
         auto_upgrade_schema: bool = False,
@@ -43,6 +44,7 @@ class Neo4jVectorDb(VectorDb):
         self.distance: Neo4jDistance = distance
         self.schema_version: int = schema_version
         self.auto_upgrade_schema: bool = auto_upgrade_schema
+        vector_index: Union[Neo4jNativeIndex, HNSW] = vector_index
         self._check_gds_availability()
         logger.debug(f"Created Neo4jVectorDb: '{self.database}'")
 
@@ -54,6 +56,27 @@ class Neo4jVectorDb(VectorDb):
             session.run("""
             CREATE CONSTRAINT ON (d:Document) ASSERT d.id IS UNIQUE;
             """)
+        
+        self.create_index()
+
+    def create_index(self):
+        if isinstance(self.vector_index, HNSW):
+            index_config = self.vector_index.to_dict()
+            cypher_query = f"""
+            CALL gds.index.vector.create(
+                '{self.label}_{self.property}_hnsw',
+                '{self.label}',
+                '{self.property}',
+                {index_config}
+            )
+            """
+        elif isinstance(self.vector_index, Neo4jNativeIndex):
+            cypher_query = f"CREATE INDEX ON :{self.label}({self.property})"
+        else:
+            raise ValueError(f"Unsupported index type: {type(self.vector_index)}")
+
+        with self.driver.session(database=self.database) as session:
+            session.run(cypher_query)
 
     def doc_exists(self, document: Document) -> bool:
         """
@@ -164,10 +187,24 @@ class Neo4jVectorDb(VectorDb):
         else:
             raise ValueError(f"Unsupported search type: {self.search_type}")
 
+    def drop_index(self):
+        if isinstance(self.vector_index, HNSW):
+            cypher_query = f"""
+            CALL gds.index.vector.drop('{self.label}_{self.property}_hnsw')
+            """
+        elif isinstance(self.vector_index, Neo4jNativeIndex):
+            cypher_query = f"DROP INDEX ON :{self.label}({self.property})"
+        else:
+            raise ValueError(f"Unsupported index type: {type(self.vector_index)}")
+
+        with self.driver.session(database=self.database) as session:
+            session.run(cypher_query)
+
     def drop(self) -> None:
         """
-        Drop all Document nodes and their relationships.
+        Drop all Document nodes, their relationships and index.
         """
+        self.drop_index()
         with self.driver.session(database=self.database) as session:
             session.run("MATCH (d:Document) DETACH DELETE d")
 
@@ -210,26 +247,34 @@ class Neo4jVectorDb(VectorDb):
         pass
 
     def _vector_search(self, query: str, limit: int, filters: Optional[Dict[str, Any]]) -> List[Document]:
-        """
-        Perform a vector search using the specified distance metric.
-        """
-        if self.embedder is None:
-            raise ValueError("Embedder is required for vector search")
-        
         query_embedding = self.embedder.embed_query(query)
-        
-        cypher_query = f"""
-        MATCH (d:Document)
+    
+        if isinstance(self.vector_index, HNSW):
+            cypher_query = f"""
+            CALL gds.index.vector.queryHNSW(
+                '{self.label}_{self.property}_hnsw',
+                $query_embedding,
+                {{
+                    topK: $limit,
+                    filter: {self._build_filter_conditions(filters)}
+                }}
+            ) YIELD node, score
+            RETURN node, score
+            """
+        else:
+            # Fallback auf native Suche, wenn kein HNSW-Index verwendet wird
+            cypher_query = f"""
+            MATCH (d:{self.label})
         WHERE {self._build_filter_conditions(filters)}
-        WITH d, {self._distance_function()}(d.embedding, $query_embedding) AS distance
-        ORDER BY distance
-        LIMIT $limit
-        RETURN d
-        """
-        
+            WITH d, {self._distance_function()}(d.{self.property}, $query_embedding) AS distance
+            ORDER BY distance
+            LIMIT $limit
+            RETURN d, distance AS score
+            """
+    
         with self.driver.session(database=self.database) as session:
             results = session.run(cypher_query, query_embedding=query_embedding, limit=limit)
-            return [self._create_document_from_record(record['d']) for record in results]
+            return [self._create_document_from_record(record['node'], score=record['score']) for record in results]
 
     def _keyword_search(self, query: str, limit: int, filters: Optional[Dict[str, Any]]) -> List[Document]:
         """
