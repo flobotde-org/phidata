@@ -5,6 +5,7 @@ from neo4j import GraphDatabase, Driver, ManagedTransaction
 from phi.assistant.storage.base import AssistantStorage
 from phi.assistant.assistant import AssistantRun
 
+
 class Neo4jAssistantStorage(AssistantStorage):
     def __init__(self, uri: str, username: str, password: str, database: str = "neo4j"):
         self.driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
