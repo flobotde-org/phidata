@@ -12,8 +12,8 @@ from langchain_core.documents.base import Document as LangchainDocument  # Impor
 
 logger = logging.getLogger(__name__)
 
+
 class Neo4jVectorDb(VectorDb):
-    
     def __init__(
         self,
         url: str,
@@ -103,9 +103,9 @@ class Neo4jVectorDb(VectorDb):
     def name_exists(self, name: str) -> bool:
         """
         Check if a document with the specified name exists.
-        
+
         Note: Direct name lookup may not be supported without additional indexing.
-        
+
         :param name: Name of the document to search for.
         """
         logger.warning("Direct name lookup is not implemented without metadata indexing.")
@@ -114,7 +114,7 @@ class Neo4jVectorDb(VectorDb):
     def id_exists(self, id: str) -> bool:
         """
         Check if a document with the given ID exists in the document store.
-        
+
         :param id: ID to check.
         :return: True if document exists, False otherwise.
         """
@@ -124,7 +124,7 @@ class Neo4jVectorDb(VectorDb):
     def insert(self, documents: List[PhiDocument], filters: Optional[Dict[str, Any]] = None) -> None:
         """
         Insert documents into the Neo4j vector store.
-        
+
         :param documents: List of PhiDocument objects to insert.
         """
         logger.debug(f"Inserting {len(documents)} documents")
@@ -134,17 +134,13 @@ class Neo4jVectorDb(VectorDb):
             doc.embedding = embedding
             doc_id = md5(doc.content.encode()).hexdigest()
             # Create a new LangChain Document object for each entry
-            new_doc = LangchainDocument(
-                id=doc_id,
-                page_content=doc.content,
-                metadata=doc.meta_data
-            )
+            new_doc = LangchainDocument(id=doc_id, page_content=doc.content, metadata=doc.meta_data)
             self.vector_store.add_documents([new_doc])
 
     def upsert(self, documents: List[PhiDocument], filters: Optional[Dict[str, Any]] = None) -> None:
         """
         Upsert documents into the database.
-        
+
         :param documents: List of PhiDocument objects to upsert.
         """
         self.insert(documents, filters)
@@ -152,7 +148,7 @@ class Neo4jVectorDb(VectorDb):
     def search(self, query: str, limit: int = 5, filters: Optional[Dict[str, Any]] = None) -> List[PhiDocument]:
         """
         Search for documents matching the query.
-        
+
         :param query: Search query string.
         :param limit: Limit on the number of results returned.
         :return: List of PhiDocument objects matching the query.

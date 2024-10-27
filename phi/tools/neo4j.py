@@ -52,7 +52,6 @@ class Neo4jTools(Toolkit):
         with self.driver.session() as session:
             return session.read_transaction(self._transaction_execute, query, parameters)
 
-
     def show_nodes(self) -> str:
         """Function to show node labels in the database
 

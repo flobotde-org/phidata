@@ -5,6 +5,7 @@ from phi.workflow import WorkflowSession
 from phi.storage.workflow.base import WorkflowStorage
 from phi.utils.log import logger
 
+
 class Neo4jWorkflowStorage(WorkflowStorage):
     def __init__(
         self,

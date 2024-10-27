@@ -6,10 +6,12 @@ from langchain_community.embeddings import OllamaEmbeddings
 
 # connect to Neo4j-Database
 # start one with cookbook/run_neo4j.sh if you haven't already or connect to a free aura instance
-url= "bolt://localhost:7687"
-username="neo4j"
-password="phi-neo4j"
-embeddings = OllamaEmbeddings(model="llama3.2",)
+url = "bolt://localhost:7687"
+username = "neo4j"
+password = "phi-neo4j"
+embeddings = OllamaEmbeddings(
+    model="llama3.2",
+)
 
 knowledge_base = PDFUrlKnowledgeBase(
     urls=["https://phi-public.s3.amazonaws.com/recipes/ThaiRecipes.pdf"],
@@ -19,7 +21,7 @@ knowledge_base = PDFUrlKnowledgeBase(
         password=password,
         embedder=embeddings,
         index_name="thaicurry",
-        node_label="thai_curry_recipes"
+        node_label="thai_curry_recipes",
     ),
 )
 knowledge_base.load(recreate=False)  # Comment out after first run
