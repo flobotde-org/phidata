@@ -2,7 +2,7 @@
 from typing import Optional, Dict, Any, List
 from neo4j import GraphDatabase, Driver, ManagedTransaction
 
-from phi.assistant.storage.base import AssistantStorage
+from phi.storage.assistant.base import AssistantStorage
 from phi.assistant.assistant import AssistantRun
 
 

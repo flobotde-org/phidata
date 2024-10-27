@@ -12,14 +12,14 @@ source ~/.venvs/aienv/bin/activate
 ### 2. Install libraries
 
 ```shell
-pip install -U neo4j pypdf "psycopg[binary]" openai phidata docker
+pip install -U neo4j langchain-community pypdf "psycopg[binary]" openai phidata docker
 ```
 
 ### 3. Run Neo4J locally
 ### Tip: alternative you can also use an AURA instance for free https://neo4j.com/product/auradb/)
 
 > Install [docker desktop](https://docs.docker.com/desktop/install/) first.
-> Install [docker-compose](https://docs.docker.com/compose/install/)
+> Install [docker-compose](https://docs.docker.com/compose/install/) second.
 
 - Run using a helper script
 

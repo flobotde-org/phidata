@@ -7,16 +7,16 @@ from phi.utils.log import logger
 
 
 class Neo4jAgentStorage(AgentStorage):
-    def __init__(self, uri: str, user: str, password: str):
+    def __init__(self, url: str, user: str, password: str):
         """
         Initialize Agent storage using a Neo4j graph database.
 
         Args:
-            uri (str): The URI for the Neo4j database.
+            url (str): The URL for the Neo4j database.
             user (str): The username to connect with.
             password (str): The password to connect with.
         """
-        self.driver: Driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.driver: Driver = GraphDatabase.driver(url, auth=(user, password))
 
     def close(self):
         """Close the connection to the database."""

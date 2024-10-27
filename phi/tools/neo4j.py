@@ -1,5 +1,5 @@
 # /phi/tools/neo4j.py
-from neo4j import GraphDatabase, Neo4jDriver, Transaction
+from neo4j import GraphDatabase, Driver, ManagedTransaction
 from typing import Optional, Dict, Any
 from phi.tools import Toolkit
 from phi.utils.log import logger
@@ -22,7 +22,7 @@ class Neo4jTools(Toolkit):
         self.uri: str = uri
         self.user: str = user
         self.password: str = password
-        self.driver: Neo4jDriver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
+        self.driver: Driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
 
         self.register(self.show_nodes)
         self.register(self.describe_node)
@@ -39,17 +39,19 @@ class Neo4jTools(Toolkit):
         """Close the connection to the database."""
         self.driver.close()
 
-    def _execute_read(self, query: str, parameters: Optional[Dict[str, Any]] = None):
-        with self.driver.session() as session:
-            return session.read_transaction(self._transaction_execute, query, parameters)
+    def _transaction_execute(
+        self, /, tx: ManagedTransaction, query: str, parameters: Optional[Dict[str, Any]] = None
+    ) -> Any:
+        return tx.run(query, parameters).data()
 
-    def _execute_write(self, query: str, parameters: Optional[Dict[str, Any]] = None):
+    def _execute_write(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> Any:
         with self.driver.session() as session:
             return session.write_transaction(self._transaction_execute, query, parameters)
 
-    @staticmethod
-    def _transaction_execute(tx: Transaction, query: str, parameters: Optional[Dict[str, Any]] = None):
-        return tx.run(query, parameters).data()
+    def _execute_read(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> Any:
+        with self.driver.session() as session:
+            return session.read_transaction(self._transaction_execute, query, parameters)
+
 
     def show_nodes(self) -> str:
         """Function to show node labels in the database

@@ -5,11 +5,10 @@ from phi.workflow import WorkflowSession
 from phi.storage.workflow.base import WorkflowStorage
 from phi.utils.log import logger
 
-
 class Neo4jWorkflowStorage(WorkflowStorage):
     def __init__(
         self,
-        table_name: str,
+        node_label: str,
         uri: str,
         username: str,
         password: str,
@@ -21,7 +20,7 @@ class Neo4jWorkflowStorage(WorkflowStorage):
         This class provides workflow storage using a Neo4j database.
 
         Args:
-            table_name (str): The name of the label to store Workflow sessions.
+            node_label (str): The name of the label to store Workflow sessions.
             uri (str): The URI of the Neo4j database.
             username (str): The username for the Neo4j database.
             password (str): The password for the Neo4j database.
@@ -30,27 +29,27 @@ class Neo4jWorkflowStorage(WorkflowStorage):
             auto_upgrade_schema (bool): Whether to automatically upgrade the schema.
         """
         # Database attributes
-        self.table_name: str = table_name
+        self.node_label: str = node_label
         self.uri: str = uri
         self.username: str = username
         self.password: str = password
         self.database: str = database
-        self._engine: Driver = GraphDatabase.driver(uri, auth=(username, password))
+        self.driver: Driver = GraphDatabase.driver(uri, auth=(username, password))
 
         # Table schema version
         self.schema_version: int = schema_version
         # Automatically upgrade schema if True
         self.auto_upgrade_schema: bool = auto_upgrade_schema
 
-        logger.debug(f"Created Neo4jWorkflowStorage: '{self.database}.{self.table_name}'")
+        logger.debug(f"Created Neo4jWorkflowStorage: '{self.database}.{self.node_label}'")
 
     def create(self) -> None:
         """
         Create the constraint for unique session_id if it doesn't exist.
         """
-        with self._engine.session(database=self.database) as session:
+        with self.driver.session(database=self.database) as session:
             session.run(f"""
-            CREATE CONSTRAINT IF NOT EXISTS FOR (s:{self.table_name})
+            CREATE CONSTRAINT IF NOT EXISTS FOR (s:{self.node_label})
             REQUIRE s.session_id IS UNIQUE
             """)
 
@@ -66,10 +65,10 @@ class Neo4jWorkflowStorage(WorkflowStorage):
             Optional[WorkflowSession]: The WorkflowSession object if found, None otherwise.
         """
         try:
-            with self._engine.session(database=self.database) as session:
+            with self.driver.session(database=self.database) as session:
                 result = session.run(
                     f"""
-                MATCH (s:{self.table_name} {{session_id: $session_id}})
+                MATCH (s:{self.node_label} {{session_id: $session_id}})
                 WHERE $user_id IS NULL OR s.user_id = $user_id
                 RETURN s
                 """,
@@ -98,9 +97,9 @@ class Neo4jWorkflowStorage(WorkflowStorage):
             List[str]: List of session IDs matching the criteria.
         """
         try:
-            with self._engine.session(database=self.database) as session:
+            with self.driver.session(database=self.database) as session:
                 query = f"""
-                MATCH (s:{self.table_name})
+                MATCH (s:{self.node_label})
                 WHERE ($user_id IS NULL OR s.user_id = $user_id)
                   AND ($workflow_id IS NULL OR s.workflow_id = $workflow_id)
                 RETURN s.session_id
@@ -128,9 +127,9 @@ class Neo4jWorkflowStorage(WorkflowStorage):
             List[WorkflowSession]: List of WorkflowSession objects matching the criteria.
         """
         try:
-            with self._engine.session(database=self.database) as session:
+            with self.driver.session(database=self.database) as session:
                 query = f"""
-                MATCH (s:{self.table_name})
+                MATCH (s:{self.node_label})
                 WHERE ($user_id IS NULL OR s.user_id = $user_id)
                   AND ($workflow_id IS NULL OR s.workflow_id = $workflow_id)
                 RETURN s
@@ -155,9 +154,9 @@ class Neo4jWorkflowStorage(WorkflowStorage):
             Optional[WorkflowSession]: The upserted WorkflowSession object.
         """
         try:
-            with self._engine.session(database=self.database) as db_session:
+            with self.driver.session(database=self.database) as db_session:
                 query = f"""
-                MERGE (s:{self.table_name} {{session_id: $session_id}})
+                MERGE (s:{self.node_label} {{session_id: $session_id}})
                 SET s = $properties,
                     s.updated_at = $updated_at
                 RETURN s
@@ -185,26 +184,23 @@ class Neo4jWorkflowStorage(WorkflowStorage):
 
         Args:
             session_id (Optional[str]): The ID of the session to delete.
+
+        Raises:
+            ValueError: If session_id is not provided.
         """
         if session_id is None:
             logger.warning("No session_id provided for deletion.")
             return
 
         try:
-            with self._engine.session(database=self.database) as session:
-                result = session.run(
-                    f"""
-                MATCH (s:{self.table_name} {{session_id: $session_id}})
-                DELETE s
-                RETURN count(s) as deleted_count
-                """,
-                    session_id=session_id,
-                )
-                deleted_count = result.single()["deleted_count"]
-                if deleted_count == 0:
-                    logger.debug(f"No session found with session_id: {session_id}")
-                else:
-                    logger.debug(f"Successfully deleted session with session_id: {session_id}")
+            with self.driver.session() as session:
+                # Delete the session with the given session_id
+                cypher_query = f"""
+                MATCH (d:{self.node_label} {{id: $session_id}})
+                DELETE d
+                """
+                session.run(cypher_query, session_id=session_id)
+                logger.debug(f"Successfully deleted session with session_id: {session_id}")
         except Exception as e:
             logger.error(f"Error deleting session: {e}")
 
@@ -212,9 +208,9 @@ class Neo4jWorkflowStorage(WorkflowStorage):
         """
         Drop all nodes with the specified label and remove the constraint.
         """
-        with self._engine.session(database=self.database) as session:
-            session.run(f"MATCH (s:{self.table_name}) DETACH DELETE s")
-            session.run(f"DROP CONSTRAINT IF EXISTS FOR (s:{self.table_name}) REQUIRE s.session_id IS UNIQUE")
+        with self.driver.session(database=self.database) as session:
+            session.run(f"MATCH (s:{self.node_label}) DETACH DELETE s")
+            session.run(f"DROP CONSTRAINT IF EXISTS FOR (s:{self.node_label}) REQUIRE s.session_id IS UNIQUE")
 
     def upgrade_schema(self) -> None:
         """
@@ -240,7 +236,7 @@ class Neo4jWorkflowStorage(WorkflowStorage):
         memo[id(self)] = copied_obj
 
         for k, v in self.__dict__.items():
-            if k == "_engine":
+            if k == "driver":
                 # Reuse the driver without copying
                 setattr(copied_obj, k, v)
             else:
@@ -252,4 +248,4 @@ class Neo4jWorkflowStorage(WorkflowStorage):
         """
         Close the database connection.
         """
-        self._engine.close()
+        self.driver.close()
